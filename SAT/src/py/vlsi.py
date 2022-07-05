@@ -38,7 +38,7 @@ def read_input_file(filename):
 def solve_vlsi(n, b, w):
     start_time = time.time()
     # Run SAT solver
-    h, lfc = vlsi_sat(n, b, w)
+    h, lfc = vlsi_sat(n, b, w, rot=True)
 
     print("h: {}, lfc: {}, elapsed time: {}".format(h, lfc, 
         time.time() - start_time))
@@ -49,10 +49,11 @@ def solve_vlsi(n, b, w):
 
         M = np.zeros((h - 1, w - 1))
         for i, (x, y) in enumerate(lfc):
-            M[y : y + b[i][1], x : x + b[i][0]] = i
+            print(i, x, y)
+            M[y : y + b[i][1], x : x + b[i][0]] = i + 1
 
         M = np.flip(M)
-        ax.matshow(M);
+        ax.matshow(M, );
         plt.show()
 
 if __name__ =="__main__":
