@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from vlsi_sat import vlsi_sat
+from vlsi_matrix_sat import vlsi_sat_cells
 from z3 import * 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -38,7 +39,7 @@ def read_input_file(filename):
 def solve_vlsi(n, b, w):
     start_time = time.time()
     # Run SAT solver
-    h, lfc = vlsi_sat(n, b, w, rot=True)
+    h, lfc = vlsi_sat(n, b, w, rot=False)
 
     print("h: {}, lfc: {}, elapsed time: {}".format(h, lfc, 
         time.time() - start_time))
@@ -48,9 +49,9 @@ def solve_vlsi(n, b, w):
         fig, ax = plt.subplots(figsize=(10, 10))
 
         M = np.zeros((h - 1, w - 1))
-        for i, (x, y) in enumerate(lfc):
-            print(i, x, y)
-            M[y : y + b[i][1], x : x + b[i][0]] = i + 1
+        for i, (x_start, x_end, y_start, y_end) in enumerate(lfc):
+            
+            M[y_start : y_end, x_start : x_end] = i + 1
 
         M = np.flip(M)
         ax.matshow(M, );
