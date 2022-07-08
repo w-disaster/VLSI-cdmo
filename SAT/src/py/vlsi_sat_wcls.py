@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from z3 import *
-from utils import *
+from model.Circuit import *
+from model.Plate import *
 from itertools import combinations
 
 def vlsi_sat(plate, rot=False):

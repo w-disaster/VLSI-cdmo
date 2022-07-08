@@ -1,7 +1,7 @@
 #!/usr/bin/python3
-
 from vlsi_sat_wcls import vlsi_sat
-from utils import *
+from model.Circuit import Circuit
+from model.Plate import Plate
 from z3 import * 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -39,10 +39,9 @@ def read_input_file(filename):
 
 def plot_plate(plate):
     if plate:
-        #Plot
         fig, ax = plt.subplots(figsize=(10, 10))
         (w, h) = plate.get_dim()
-        
+     
         M = np.zeros((h - 1, w - 1))
         for i, circuit in enumerate(plate.get_circuits()):
             (x, y) = circuit.get_coordinate()
@@ -67,7 +66,7 @@ def solve_vlsi(plate):
     plot_plate(plate)
 
 
-if __name__ =="__main__":
-    (input_filename, outout_filename) = get_io_files(sys.argv)
+if __name__ == "__main__":
+    (input_filename, output_filename) = get_io_files(sys.argv)
     plate = read_input_file(input_filename)
     solve_vlsi(plate)
