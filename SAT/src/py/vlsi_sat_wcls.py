@@ -9,6 +9,9 @@ def vlsi_sat(plate, rot=False):
     (n_circuits, (w,), cs) = (plate.get_n(), plate.get_dim(),
             plate.get_circuits())
 
+    (cw, ch) = ([cs[i].get_dim()[0] for i in range(n_circuits)],
+        [cs[i].get_dim()[1] for i in range(n_circuits)])
+
     x = [Int(f"x_{i}") for i in range(n_circuits)]
     y = [Int(f"y_{i}") for i in range(n_circuits)]
     z = [Int(f"z_{i}") for i in range(n_circuits)]
@@ -17,11 +20,10 @@ def vlsi_sat(plate, rot=False):
     o = Optimize()
 
     # Maximum height
-    hs = sum([c.get_dim()[1] for c in cs])
+    hs = sum(ch)
     o.add(And(h < hs, h > 0))
 
-    rot = True
-    # Set z to all zeros if rot == False
+    # Set z to all 1s if rot == False
     if not rot:
         o.add(And([z[i] == 1 for i in range(n_circuits)]))
     else:
@@ -31,22 +33,19 @@ def vlsi_sat(plate, rot=False):
     # y one.
     # x_i + bw_i < w and y_i + bh_i < h foreach i in [0, ..., len(b)]
     # x_i >= 0 and y_i >= 0 foreach i in [0, ..., len(b)]
-    print(n_circuits)
-    o.add([And(x[i] >= 0, x[i] + (z[i] * cs[i].get_dim()[0]) + ((1 - z[i]) * cs[i].get_dim()[1]) < w,
-              y[i] >= 0, y[i] + (z[i] * cs[i].get_dim()[1]) + ((1 - z[i]) * cs[i].get_dim()[0]) < h) 
-              for i in range(n_circuits)])
+    o.add([And(x[i] >= 0, x[i] + (z[i] * cw[i]) + ((1 - z[i]) * ch[i]) < w,
+          y[i] >= 0, y[i] + (z[i] * ch[i]) + ((1 - z[i]) * cw[i]) < h) 
+          for i in range(n_circuits)])
 
     # foreach pair of blocks: one must be placed before or next the other or
     # above or below
-    #o.add([Or(x[i] + b[i][0] <= x[j], x[j] + b[j][0] <= x[i],
-    #    y[i] + b[i][1] <= y[j], y[j] + b[j][1] <= y[i])
-    #     for (i, j) in combinations(range(len(b)), 2)])
     o.add([Or(
-        x[i] + (z[i] * cs[i].get_dim()[0]) + ((1 - z[i]) * cs[i].get_dim()[1]) <= x[j],
-        x[j] + (z[j] * cs[j].get_dim()[0]) + ((1 - z[j]) * cs[j].get_dim()[1]) <= x[i],
-        
-        y[i] + (z[i] * cs[i].get_dim()[1]) + ((1 - z[i]) * cs[i].get_dim()[0]) <= y[j],
-        y[j] + (z[j] * cs[j].get_dim()[1]) + ((1 - z[j]) * cs[j].get_dim()[0]) <= y[i])
+        # x-axis constraints
+        x[i] + (z[i] * cw[i]) + ((1 - z[i]) * ch[i]) <= x[j],
+        x[j] + (z[j] * cw[j]) + ((1 - z[j]) * ch[j]) <= x[i],
+        # y-axis constraints
+        y[i] + (z[i] * ch[i]) + ((1 - z[i]) * cw[i]) <= y[j],
+        y[j] + (z[j] * ch[j]) + ((1 - z[j]) * cw[j]) <= y[i])
         for (i, j) in combinations(range(n_circuits), 2)])
         
     o.minimize(h)
@@ -54,7 +53,6 @@ def vlsi_sat(plate, rot=False):
     o.check()
     if o.check() == sat:
         m = o.model()
-        print([m.evaluate(z[i]) for i in range(n_circuits)])
 
         # Set height of the plate
         h_ev = m.evaluate(h).as_long()
