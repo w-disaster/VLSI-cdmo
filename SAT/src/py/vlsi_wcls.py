@@ -37,26 +37,35 @@ def read_input_file(filename):
         circuits = [Circuit(dim) for dim in cs_dim]
     return Plate((w,), n, circuits)
 
-def solve_vlsi(plate):
-    start_time = time.time()
-    # Run SAT solver
-    h, lfc = vlsi_sat(plate, rot=False)
-
-    print("h: {}, lfc: {}, elapsed time: {}".format(h, lfc, 
-        time.time() - start_time))
-
-    if len(lfc) > 0:
+def plot_plate(plate):
+    if plate:
         #Plot
         fig, ax = plt.subplots(figsize=(10, 10))
-
+        (w, h) = plate.get_dim()
+        
         M = np.zeros((h - 1, w - 1))
-        for i, (x_start, x_end, y_start, y_end) in enumerate(lfc):
-            
-            M[y_start : y_end, x_start : x_end] = i + 1
+        for i, circuit in enumerate(plate.get_circuits()):
+            (x, y) = circuit.get_coordinate()
+            (cw, ch) = circuit.get_dim()
+            M[y : y + ch, x : x + cw] = i + 1
 
         M = np.flip(M)
         ax.matshow(M, );
         plt.show()
+
+
+def solve_vlsi(plate):
+    start_time = time.time()
+
+    # letsss go Z3
+    plate = vlsi_sat(plate, rot=False)
+
+    print("Elapsed time: {}, plate dim (w, h) = ({}, {})"
+            .format(time.time() - start_time, plate.get_dim()[0], 
+                plate.get_dim()[1]))
+
+    plot_plate(plate)
+
 
 if __name__ =="__main__":
     (input_filename, outout_filename) = get_io_files(sys.argv)
