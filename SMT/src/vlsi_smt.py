@@ -5,15 +5,7 @@ from model.Plate import *
 from itertools import combinations
 from math import floor
 
-def z3_max(vector):
-    maximum = vector[0]
-    for value in vector[1:]:
-        maximum = If(value > maximum, value, maximum)
-    return maximum
-
-
-
-def vlsi_sat(plate, rot=False):
+def vlsi_smt(plate, rot=False):
     # b = (bw, bh)
     # left bottom coordinates of each placed block
     (n_circuits, (w,), cs) = (plate.get_n(), plate.get_dim(),
@@ -21,7 +13,7 @@ def vlsi_sat(plate, rot=False):
 
     x, y, z = [], [], []
     cw, ch = [], []
-    #h = Int(f"h")
+    h = Int(f"h")
     for i in range(n_circuits):
         x.append(Int(f"x_{i}"))
         y.append(Int(f"y_{i}"))
@@ -35,16 +27,15 @@ def vlsi_sat(plate, rot=False):
 
     # Maximum height
     hs = sum(ch)
-    h = z3_max([ch[i] + y[i] for i in range(n_circuits)])
-
     o.add(And(h < hs, h > 0))
-    
-       # Set z to all 1s if rot == False
+     
+    # Set z to all 1s if rot == False
     if not rot:
         o.add(And([z[i] == 1 for i in range(n_circuits)]))
     else:
         o.add(And([Or(z[i] == 0, z[i] == 1) for i in range(n_circuits)]))
-
+    
+    
     # each block must be placed between 0 and w in the x-axis, 0 and h in the
     # y one.
     # x_i + bw_i < w and y_i + bh_i < h foreach i in [0, ..., len(b)]
@@ -65,7 +56,7 @@ def vlsi_sat(plate, rot=False):
             lr_ij = x[i] + (z[i] * cw[i]) + ((1 - z[i]) * ch[i]) <= x[j]
             o.add(Or(lr_ij, lr_ji, ud_ij, ud_ji))
     '''
-    '''
+    
     for (i, j) in combinations(range(n_circuits), 2):
         lr_ij = x[i] + (z[i] * cw[i]) + ((1 - z[i]) * ch[i]) <= x[j]
         lr_ji = x[j] + (z[j] * cw[j]) + ((1 - z[j]) * ch[j]) <= x[i]
@@ -76,38 +67,40 @@ def vlsi_sat(plate, rot=False):
             if cw[i] + cw[j] > w:
                 o.add(Or(ud_ij, ud_ji))
             else:
-                o.add(Or(lr_ij, lr_ji, ud_ij, ud_ji))
+                o.add(Or(Or(lr_ij, lr_ji), Or(ud_ij, ud_ji)))
         else:
             c = []
             if cw[i] + cw[j] > w:
-                c.append(Not(And(z[i], z[j])))
+                print("cw[i] cw[j]")
+                c.append(Not(And(z[i] == 1, z[j] == 1)))
             if cw[i] + ch[j] > w:
-                c.append(Not(And(z[i], Not(z[j]))))
+                print("cw[i] ch[j]")
+                c.append(Not(And(z[i] == 1, Not(z[j] == 1))))
             if ch[i] + cw[j] > w:
-                c.append(Not(And(Not(z[i]), z[j])))
+                print("ch[i] cw[j]")
+                c.append(Not(And(Not(z[i] == 1), z[j] == 1)))
             if ch[i] + ch[j] > w:
-                c.append(Or(z[i], z[j]))
+                print("ch[i] ch[j]")
+                c.append(Or(
+                    Or(z[i] == 0, z[j] == 1),
+                    Or(z[i] == 1, z[j] == 0),
+                    Or(z[i] == 1, z[j] == 1)))
 
-            o.add(c)
-            o.add(lr_ij, lr_ji, ud_ij, ud_ji)
-    '''
+            o.add(Implies(Not(Or(ud_ij, ud_ji)), And(c)))
+            o.add(Or(Or(lr_ij, lr_ji), Or(ud_ij, ud_ji)))
+    
     # foreach pair of blocks: one must be placed before or next the other or
     # above or below
-        
+    '''        
     o.add([Or(
         # x-axis constraints
-        Or(
-            x[i] + (z[i] * cw[i]) + ((1 - z[i]) * ch[i]) <= x[j],
-            x[j] + (z[j] * cw[j]) + ((1 - z[j]) * ch[j]) <= x[i]),
+        x[i] + (z[i] * cw[i]) + ((1 - z[i]) * ch[i]) <= x[j],
+        x[j] + (z[j] * cw[j]) + ((1 - z[j]) * ch[j]) <= x[i],
         # y-axis constraints
-        Or(
-            y[i] + (z[i] * ch[i]) + ((1 - z[i]) * cw[i]) <= y[j],
-            y[j] + (z[j] * ch[j]) + ((1 - z[j]) * cw[j]) <= y[i]))
+        y[i] + (z[i] * ch[i]) + ((1 - z[i]) * cw[i]) <= y[j],
+        y[j] + (z[j] * ch[j]) + ((1 - z[j]) * cw[j]) <= y[i])
         for (i, j) in combinations(range(n_circuits), 2)])
-
-#    index = np.argmax(np.asarray(ch))
-#    o.add(And(x[index] == 0, y[index] == 0))
-
+    ''' 
     o.minimize(h)
     
     o.check()

@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from vlsi_sat import vlsi_sat
+from vlsi_smt1 import vlsi_smt
 from model.Circuit import Circuit
 from model.Plate import Plate
 from z3 import * 
@@ -57,7 +57,7 @@ def solve_vlsi(plate):
     start_time = time.time()
 
     # letsss go Z3
-    plate = vlsi_sat(plate, rot=False)
+    plate = vlsi_smt(plate, rot=False)
 
     print("Elapsed time: {}, plate dim (w, h) = ({}, {})"
             .format(time.time() - start_time, plate.get_dim()[0], 
