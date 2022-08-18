@@ -1,14 +1,15 @@
 from z3 import *
 from itertools import combinations
+from math import floor, ceil
 
 def at_least_one_np(bool_vars):
     return Or(bool_vars)
 
-def at_most_one_np(bool_vars, name = ""):
+def at_most_one_np(bool_vars):
     return [Not(And(pair[0], pair[1])) for pair in combinations(bool_vars, 2)]
 
-def exactly_one_np(bool_vars, name = ""):
-    return And(at_least_one_np(bool_vars), And(at_most_one_np(bool_vars, name)))
+def exactly_one_np(bool_vars):
+    return And(at_least_one_np(bool_vars), And(at_most_one_np(bool_vars)))
 
 def vlsi_sat(plate, rot=False):
     # - Each cell assumes a value between 0 and n (included), where the 0-value
@@ -20,7 +21,8 @@ def vlsi_sat(plate, rot=False):
     (n, (w,), cs) = (plate.get_n(), plate.get_dim(),
             plate.get_circuits())
 
-    h = sum([cs[i].get_dim()[1] for i in range(n)])
+    max_block_per_w = floor(w / max([cs[i].get_dim()[0] for i in range(n)]))
+    h = ceil(n * max([cs[i].get_dim()[1] for i in range(n)]) / max_block_per_w)
     
     # cells[i][j] : cell of row i and column j
     cells = [[[Bool(f"cells_{i}_{j}_{k}") for k in range(n + 1)] for j in range(w)] 
@@ -44,7 +46,7 @@ def vlsi_sat(plate, rot=False):
         
         for i in range(h):
             for j in range(w):
-                if j + x < w and i + y < h:  
+                if j + x <= w and i + y <= h:  
                     block = [cells[r][c][k] 
                              for r in range(i, i + y) for c in range(j, j + x)]
                     cnst.append(And(block))
@@ -52,7 +54,7 @@ def vlsi_sat(plate, rot=False):
                 else:
                     cnst.append(False)
         o.add(exactly_one(cnst))
-  
+
     o.check()    
     if o.check() == sat:
         print("sat")

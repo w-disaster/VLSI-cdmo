@@ -39,19 +39,28 @@ def read_input_file(filename):
 
 def plot_plate(plate):
     if plate:
-        fig, ax = plt.subplots(figsize=(10, 10))
+        #fig, ax = plt.subplots(figsize=(10, 10))
         (w, h) = plate.get_dim()
-     
-        M = np.zeros((h - 1, w - 1))
+         
+        M = np.zeros((h, w))
         for i, circuit in enumerate(plate.get_circuits()):
             (x, y) = circuit.get_coordinate()
             (cw, ch) = circuit.get_dim()
             M[y : y + ch, x : x + cw] = i + 1
 
         M = np.flip(M)
+        ax = plt.gca()
         ax.matshow(M, );
-        plt.show()
 
+
+        ax.set_xticks(np.arange(-.5, w, 1))
+        ax.set_yticks(np.arange(-.5, h, 1))
+        ax.set_xticklabels(np.arange(0, w + 1, -1))
+        ax.set_yticklabels(np.arange(h + 1, 0, -1))
+        
+        ax.grid(color='red', linestyle='-.', linewidth=1)
+        
+        plt.show()
 
 def solve_vlsi(plate):
     start_time = time.time()
