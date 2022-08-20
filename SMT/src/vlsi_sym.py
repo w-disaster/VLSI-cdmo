@@ -57,7 +57,7 @@ def solve_vlsi(plate):
     start_time = time.time()
 
     # letsss go Z3
-    plate = vlsi_smt(plate, rot=True)
+    plate = vlsi_smt(plate, rot=False)
 
     print("Elapsed time: {}, plate dim (w, h) = ({}, {})"
             .format(time.time() - start_time, plate.get_dim()[0], 

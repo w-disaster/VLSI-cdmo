@@ -10,33 +10,33 @@ def vlsi_smt(plate, rot=False):
     # left bottom coordinates of each placed block
     (n, (w,), cs) = (plate.get_n(), plate.get_dim(),
             plate.get_circuits())
-    print("w : ", w)
-    x, y, z = [], [], []
+
+    x, y, z, zb = [], [], [], []
     cw, ch = [], []
     h = Int(f"h")
+    o = Optimize()
+
     for i in range(n):
         x.append(Int(f"x_{i}"))
         y.append(Int(f"y_{i}"))
         z.append(Int(f"z_{i}"))
-                
+        
+        zb.append(Bool(f"zb_{i}"))        
+        o.add(If(zb[i] == True, z[i] == 1, z[i] == 0))
+
         cw.append(cs[i].get_dim()[0])
         ch.append(cs[i].get_dim()[1])
 
-    # Optimize
-    o = Optimize()
+    # Maximum height                            
+    max_x = max([cs[i].get_dim()[0] for i in range(n)])
+    max_y = max([cs[i].get_dim()[1] for i in range(n)])
+    max_block_per_w = floor(w / max_x)                                           
+    h_max = ceil(n * max_y / max_block_per_w)
+    o.add(And(h < h_max, h > max_y))
 
-    # Maximum height
-    max_block_per_w = floor(w / max([cs[i].get_dim()[0] for i in range(n)]))
-    hs = ceil(n * max([cs[i].get_dim()[1] for i in range(n)]) / max_block_per_w)
-
-    o.add(And(h < hs, h > 0))
-     
     # Set z to all 1s if rot == False
     if not rot:
-        o.add(And([z[i] == 1 for i in range(n)]))
-    else:
-        o.add(And([Or(z[i] == 0, z[i] == 1) for i in range(n)]))
-    
+        o.add(And(zb)) 
     
     # each block must be placed between 0 and w in the x-axis, 0 and h in the
     # y one.
@@ -58,38 +58,28 @@ def vlsi_smt(plate, rot=False):
             else:
                 o.add(Or(Or(lr_ij, lr_ji), Or(ud_ij, ud_ji)))
         else:
-            c = []
+            c = []            
+            # Case 1
             if cw[i] + cw[j] > w:
-                print("cw[i] cw[j]")
-                c.append(Not(And(z[i] == 1, z[j] == 1)))
+                c.append(Not(And(zb[i], zb[j])))
+            # Case 2
             if cw[i] + ch[j] > w:
-                print("cw[i] ch[j]")
-                c.append(Not(And(z[i] == 1, Not(z[j] == 1))))
+                c.append(Not(And(zb[i], Not(zb[j]))))
+            # Case 3
             if ch[i] + cw[j] > w:
-                print("ch[i] cw[j]")
-                c.append(Not(And(Not(z[i] == 1), z[j] == 1)))
+                c.append(Not(And(Not(zb[i]), zb[j])))
+            # Case 4
             if ch[i] + ch[j] > w:
-                print("ch[i] ch[j]")
-                c.append(Or(
-                    Or(z[i] == 0, z[j] == 1),
-                    Or(z[i] == 1, z[j] == 0),
-                    Or(z[i] == 1, z[j] == 1)))
+                c.append(Or(zb[i], zb[j]))
+                #c.append(Or(
+                #    Or(z[i] == 0, z[j] == 1),
+                #    Or(z[i] == 1, z[j] == 0),
+                #    Or(z[i] == 1, z[j] == 1)))
 
             o.add(Implies(Not(Or(ud_ij, ud_ji)), And(c)))
             o.add(Or(Or(lr_ij, lr_ji), Or(ud_ij, ud_ji)))
     
-    # foreach pair of blocks: one must be placed before or next the other or
-    # above or below
-    '''        
-    o.add([Or(
-        # x-axis constraints
-        x[i] + (z[i] * cw[i]) + ((1 - z[i]) * ch[i]) <= x[j],
-        x[j] + (z[j] * cw[j]) + ((1 - z[j]) * ch[j]) <= x[i],
-        # y-axis constraints
-        y[i] + (z[i] * ch[i]) + ((1 - z[i]) * cw[i]) <= y[j],
-        y[j] + (z[j] * ch[j]) + ((1 - z[j]) * cw[j]) <= y[i])
-       for (i, j) in combinations(range(n), 2)])
-    ''' 
+    # Minimize the height 
     o.minimize(h)
     
     o.check()

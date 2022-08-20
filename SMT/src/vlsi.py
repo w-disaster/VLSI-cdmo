@@ -10,21 +10,24 @@ import time
 import sys, getopt
 
 def get_io_files(argv):
-    short_opts = "i:o:"
-    long_opts = ["input_file=", "output_file="]
+    short_opts = "i:o:r:"
+    long_opts = ["input_file=", "output_file=", "rotation="]
     try:
         arguments, values = getopt.getopt(argv[1:], short_opts, long_opts)
-        input_filename, output_filename = "", ""
+        input_filename, output_filename, rot = "", "", ""
         for (arg, v) in arguments:
             if arg in ("-i", "--input_file"):
                 input_filename = v
             elif arg in ("-o", "--output_file"):
                 output_filename = v
+            elif arg in ("-r", "--rotation"):
+                rot = v == "True"
 
-        if input_filename == "" or output_filename == "":
-            print("Usage: specify input file [-i, --input_file] and output file [-o, --output_file]")
+        if input_filename == "" or output_filename == "" or rot == "":
+            print("""Usage: specify input file [-i, --input_file], output file
+                    [-o, --output_file] and rotation [-r, --rotation]""")
             sys.exit(0)
-        return (input_filename, output_filename)
+        return (input_filename, output_filename, rot)
     except getopt.error as err:
         print(str(err))
         sys.exit(2)
@@ -53,21 +56,19 @@ def plot_plate(plate):
         ax = plt.gca()
         ax.matshow(M, );
 
-
         ax.set_xticks(np.arange(-.5, w, 1))
         ax.set_yticks(np.arange(-.5, h, 1))
         ax.set_xticklabels(np.arange(0, w + 1, -1))
         ax.set_yticklabels(np.arange(h + 1, 0, -1))
         
         ax.grid(color='red', linestyle='-.', linewidth=1)
-        
         plt.show()
 
-def solve_vlsi(plate):
+def solve_vlsi(plate, rot):
     start_time = time.time()
 
     # letsss go Z3
-    plate = vlsi_smt(plate, rot=False)
+    plate = vlsi_smt(plate, rot)
 
     print("Elapsed time: {}, plate dim (w, h) = ({}, {})"
             .format(time.time() - start_time, plate.get_dim()[0], 
@@ -77,6 +78,6 @@ def solve_vlsi(plate):
 
 
 if __name__ == "__main__":
-    (input_filename, output_filename) = get_io_files(sys.argv)
+    (input_filename, output_filename, rot) = get_io_files(sys.argv)
     plate = read_input_file(input_filename)
-    solve_vlsi(plate)
+    solve_vlsi(plate, rot)
