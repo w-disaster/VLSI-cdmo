@@ -44,16 +44,21 @@ def vlsi_sat(plate, rot):
     # Z3 order encoding variables
     px = [[Bool(f"px{i}_{e}") for e in range(w - csw[i])]
         for i in range(n)]
+    
     py = [[Bool(f"py{i}_{f}") for f in range(h_max - csh[i])]
         for i in range(n)]
-    
+   
+    o.add([at_least_one_np(px[i]) for i in range(n)])
+    o.add([at_least_one_np(py[i]) for i in range(n)])
+
     # Order encoding constraints
+    # px_i <= c --> px_i <= c + 1
     for i in range(n):
-        o.add([Implies(px[i][c], px[i][c + 1]) 
+        o.add([Or(Not(px[i][c]), px[i][c + 1]) 
             for c in range(w - csw[i] - 1)])
-        o.add([Implies(py[i][c], py[i][c + 1]) 
+        o.add([Or(Not(py[i][c]), py[i][c + 1]) 
             for c in range(h_max - csh[i] - 1)])
-        
+
     # -------------------------------------------------------------------
     # NON-OVERLAPPING
 
@@ -63,43 +68,68 @@ def vlsi_sat(plate, rot):
 
     # Non-overlapping constraints
     o.add([Or(Or(lr[i][j], lr[j][i]), Or(ud[i][j], ud[j][i])) 
-        for i in range(n) for j in range(n)])
-
+        for (i, j) in combinations(range(n), 2)])
+    
     for i in range(n):
-        for j in range(i, n):
+        for j in range(i):
             
-            for e in range(w - cs[j].get_dim()[0]]):
+            for e in range(w - csw[j] - csw[i]):
                 # (lr_{i, j}, px_{j, e + w_i}) --> px_{i, e}
                 o.add(Or(Not(lr[i][j]), px[i][e], Not(px[j][e + csw[i]])))
+                #for e in range(w - csw[i]):
                 # (lr_{j, i}, px_{i, e + w_j}) --> px_{j, e}
                 o.add(Or(Not(lr[j][i]), px[j][e], Not(px[i][e + csw[j]])))
             
-            for f in range(h_max - cs[i].get_dim()[1]]):
+            for f in range(h_max - csh[j] - csh[i]):
                 # (ud_{i, j}, py_{j, f + h_i}) --> py_{i, h}
-                o.add(Or(Not(ud[i][j]), px[i][f], Not(px[j][f + csh[i]]))) 
+                o.add(Or(Not(ud[i][j]), py[i][f], Not(py[j][f + csh[i]]))) 
+                #for f in range(h_max - csh[i]):
                 # (ud_{j, i}, py_{i, f + h_j}) --> py_{j, h}
-                o.add(Or(Not(lr[j][i]), px[j][f], Not(px[j][f + csh[j]])))
+                o.add(Or(Not(ud[j][i]), py[j][f], Not(py[i][f + csh[j]])))
+    
+    # -------------------------------------------------------------------
+    # ENCODING HEIGHT
+    ph = [Bool(f"ph_{h}") for h in range(h_min, h_max)]
+
+    # Constraints
+    for h in range(h_min, h_max):
+        # ph_h --> py_{k, h - ch_k}
+        o.add([Or(Not(ph[h - h_min]), py[k][h - csh[k]]) for k in range(n)])
+        
+        # Order encoding
+        if h < h_max - 1:
+            o.add(Or(Not(ph[h - h_min]), ph[h - h_min + 1]))
+
     
     # --------------------------------------------------------------------
     # CHECK SAT
 
-    o.check()    
-    if o.check() == sat:
-        print("SAT")
-        m = o.model()
-        # Set height of the plate
-        h_ev = m.evaluate(h).as_long()
-        plate.set_dim((w, h_ev))
+    for h in range(h_min, h_max):
+        s = o
+        s.add(ph[h - h_min])
+        s.check()
+        if s.check() == sat:
+            m = s.model()
+            # px
+            px_ev = [[m.evaluate(px[i][e]) for e in range(w - csw[i])] 
+                    for i in range(n)]
+            # py
+            py_ev = [[m.evaluate(py[i][f]) for f in range(h_max - csh[i])]
+                    for i in range(n)]
+            
+            # Evaluate height
+            ph_ev = [m.evaluate(ph[h - h_min]) for i in range(h_min, h_max)]
+            h_ev = ph_ev.index(True) + h_min
 
-        for i in range(n):
-            x_ev, y_ev = m.evaluate(csx[i]).as_long(), m.evaluate(csy[i]).as_long()
-            print(x_ev, y_ev)
-            plate.get_circuit(i).set_coordinate((x_ev, y_ev))
-            # Se == 0
-            #if m.evaluate(z[i]).as_long() == 0:
-            #    (cw, ch) = plate.get_circuit(i).get_dim()
-            #    plate.get_circuit(i).set_dim((ch, cw))   
-        return plate
+            plate.set_dim((w, h_ev))
+
+            for k in range(n):
+                x_ev, y_ev = px_ev[k].index(True), py_ev[k].index(True)
+                print(x_ev, y_ev)
+                plate.get_circuit(k).set_coordinate((x_ev, y_ev))
+            return plate
+        else:
+            print("UNSAT, h: {}".format(h))
         
-    print("unsat")
     return []
+ 
