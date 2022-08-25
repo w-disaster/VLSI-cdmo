@@ -36,28 +36,28 @@ def vlsi_sat(plate, rot):
     h_min = max_y
 
     # Z3 Optimize
-    o = Optimize()
+    s = Solver()
     
     # -------------------------------------------------------------------
     # ORDER ENCODING
 
     # Z3 order encoding variables
-    px = [[Bool(f"px{i}_{e}") for e in range(w - csw[i])]
+    px = [[Bool(f"px{i}_{e}") for e in range(w - csw[i] + 1)]
         for i in range(n)]
     
-    py = [[Bool(f"py{i}_{f}") for f in range(h_max - csh[i])]
+    py = [[Bool(f"py{i}_{f}") for f in range(h_max - csh[i] + 1)]
         for i in range(n)]
    
-    o.add([at_least_one_np(px[i]) for i in range(n)])
-    o.add([at_least_one_np(py[i]) for i in range(n)])
+    #s.add([at_least_one_np(px[i]) for i in range(n)])
+    #s.add([at_least_one_np(py[i]) for i in range(n)])
 
     # Order encoding constraints
     # px_i <= c --> px_i <= c + 1
     for i in range(n):
-        o.add([Or(Not(px[i][c]), px[i][c + 1]) 
-            for c in range(w - csw[i] - 1)])
-        o.add([Or(Not(py[i][c]), py[i][c + 1]) 
-            for c in range(h_max - csh[i] - 1)])
+        s.add([Or(Not(px[i][c]), px[i][c + 1]) 
+            for c in range(w - csw[i])])
+        s.add([Or(Not(py[i][c]), py[i][c + 1]) 
+            for c in range(h_max - csh[i])])
 
     # -------------------------------------------------------------------
     # NON-OVERLAPPING
@@ -67,25 +67,29 @@ def vlsi_sat(plate, rot):
     ud = [[Bool(f"ud_{i}_{j}") for i in range(n)] for j in range(n)]
 
     # Non-overlapping constraints
-    o.add([Or(Or(lr[i][j], lr[j][i]), Or(ud[i][j], ud[j][i])) 
+    s.add([Or(lr[i][j], lr[j][i], ud[i][j], ud[j][i]) 
         for (i, j) in combinations(range(n), 2)])
     
-    for i in range(n):
-        for j in range(i):
-            
-            for e in range(w - csw[j] - csw[i]):
-                # (lr_{i, j}, px_{j, e + w_i}) --> px_{i, e}
-                o.add(Or(Not(lr[i][j]), px[i][e], Not(px[j][e + csw[i]])))
-                #for e in range(w - csw[i]):
-                # (lr_{j, i}, px_{i, e + w_j}) --> px_{j, e}
-                o.add(Or(Not(lr[j][i]), px[j][e], Not(px[i][e + csw[j]])))
-            
-            for f in range(h_max - csh[j] - csh[i]):
-                # (ud_{i, j}, py_{j, f + h_i}) --> py_{i, h}
-                o.add(Or(Not(ud[i][j]), py[i][f], Not(py[j][f + csh[i]]))) 
-                #for f in range(h_max - csh[i]):
-                # (ud_{j, i}, py_{i, f + h_j}) --> py_{j, h}
-                o.add(Or(Not(ud[j][i]), py[j][f], Not(py[i][f + csh[j]])))
+    for (i, j) in combinations(range(n), 2):   
+        s.add(lr[i][j] == Or([
+            Or([And(px[i][t], px[j][k + csw[i]]) 
+                for k in range(t, w - csw[i] - csw[j] + 1)]) 
+            for t in range(w - csw[i] - csw[j] + 1)]))
+
+        s.add(lr[j][i] == Or([
+            Or([And(px[j][t], px[i][k + csw[j]]) 
+                for k in range(t, w - csw[i] - csw[j] + 1)]) 
+            for t in range(w - csw[i] - csw[j] + 1)]))
+        
+        s.add(ud[i][j] == Or([
+            Or([And(py[i][t], py[j][k + csh[i]]) 
+                for k in range(t, h_max - csh[i] - csh[j] + 1)]) 
+            for t in range(h_max - csh[i] - csh[j] + 1)]))
+        
+        s.add(ud[j][i] == Or([
+            Or([And(py[j][t], py[i][k + csh[j]]) 
+                for k in range(t, h_max - csh[i] - csh[j] + 1)]) 
+            for t in range(h_max - csh[i] - csh[j] + 1)]))
     
     # -------------------------------------------------------------------
     # ENCODING HEIGHT
@@ -94,33 +98,39 @@ def vlsi_sat(plate, rot):
     # Constraints
     for h in range(h_min, h_max):
         # ph_h --> py_{k, h - ch_k}
-        o.add([Or(Not(ph[h - h_min]), py[k][h - csh[k]]) for k in range(n)])
+        s.add([Or(Not(ph[h - h_min]), py[k][h - csh[k]]) for k in range(n)])
         
         # Order encoding
         if h < h_max - 1:
-            o.add(Or(Not(ph[h - h_min]), ph[h - h_min + 1]))
+            s.add(Or(Not(ph[h - h_min]), ph[h - h_min + 1]))
 
     
     # --------------------------------------------------------------------
     # CHECK SAT
 
     for h in range(h_min, h_max):
-        s = o
-        s.add(ph[h - h_min])
-        s.check()
-        if s.check() == sat:
-            m = s.model()
-            # px
-            px_ev = [[m.evaluate(px[i][e]) for e in range(w - csw[i])] 
-                    for i in range(n)]
-            # py
-            py_ev = [[m.evaluate(py[i][f]) for f in range(h_max - csh[i])]
-                    for i in range(n)]
+        ss = s
+        #s.add(ph[h - h_min])
+        #s.add(ph[h_max - (h - h_min) - h_min - 1])
+        ss.add(ph[len(ph) - 1])
+        ss.check()
+        if ss.check() == sat:
+            m = ss.model()
             
-            # Evaluate height
-            ph_ev = [m.evaluate(ph[h - h_min]) for i in range(h_min, h_max)]
-            h_ev = ph_ev.index(True) + h_min
+            
 
+            # px
+            px_ev = [[m.evaluate(px[i][e]) for e in range(w - csw[i] + 1)] 
+                    for i in range(n)]
+            print(px_ev)
+            # py
+            py_ev = [[m.evaluate(py[i][f]) for f in range(h_max - csh[i] + 1)]
+                    for i in range(n)]
+            print(py_ev)
+            # Evaluate height
+            ph_ev = [m.evaluate(ph[hi - h_min]) for hi in range(h_min, h_max)]
+            h_ev = ph_ev.index(True) + h_min
+            print(ph_ev)
             plate.set_dim((w, h_ev))
 
             for k in range(n):
@@ -132,4 +142,3 @@ def vlsi_sat(plate, rot):
             print("UNSAT, h: {}".format(h))
         
     return []
- 
