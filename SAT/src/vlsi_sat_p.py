@@ -71,27 +71,33 @@ def vlsi_sat(plate, rot):
         for (i, j) in combinations(range(n), 2)])
     
     for (i, j) in combinations(range(n), 2):   
-        s.add(lr[i][j] == Or([
-            Or([And(px[i][t], px[j][k + csw[i]]) 
-                for k in range(t, w - csw[i] - csw[j] + 1)]) 
-            for t in range(w - csw[i] - csw[j] + 1)]))
+        lr_ij, lr_ji, ud_ij, ud_ji = [], [], [], []
 
-        s.add(lr[j][i] == Or([
-            Or([And(px[j][t], px[i][k + csw[j]]) 
-                for k in range(t, w - csw[i] - csw[j] + 1)]) 
-            for t in range(w - csw[i] - csw[j] + 1)]))
-        
-        s.add(ud[i][j] == Or([
-            Or([And(py[i][t], py[j][k + csh[i]]) 
-                for k in range(t, h_max - csh[i] - csh[j] + 1)]) 
-            for t in range(h_max - csh[i] - csh[j] + 1)]))
-        
-        s.add(ud[j][i] == Or([
-            Or([And(py[j][t], py[i][k + csh[j]]) 
-                for k in range(t, h_max - csh[i] - csh[j] + 1)]) 
-            for t in range(h_max - csh[i] - csh[j] + 1)]))
-    
-    # -------------------------------------------------------------------
+        for t in range(w - csw[i] - csw[j] + 1):
+            lr_ij_c, lr_ji_c = [], [] 
+            for k in range(t, w - csw[i] - csw[j] + 1):
+                lr_ij_c.append(And(px[i][t], px[j][k + csw[i]]))
+                lr_ji_c.append(And(px[j][t], px[i][k + csw[j]]))
+
+            lr_ij.append(Or(lr_ij_c))
+            lr_ji.append(Or(lr_ji_c))
+
+        s.add(lr[i][j] == Or(lr_ij))
+        s.add(lr[j][i] == Or(lr_ji))
+
+        for t in range(h_max - csh[i] - csh[j] + 1):
+            ud_ij_c, ud_ji_c = [], []
+            for k in range(t, h_max - csh[i] - csh[j] + 1):
+                ud_ij_c.append(And(py[i][t], py[j][k + csh[i]]))
+                ud_ji_c.append(And(py[j][t], py[i][k + csh[j]]))
+            
+            ud_ij.append(Or(ud_ij_c))
+            ud_ji.append(Or(ud_ji_c))
+
+        s.add(ud[i][j] == Or(ud_ij))
+        s.add(ud[j][i] == Or(ud_ji))
+   
+   # -------------------------------------------------------------------
     # ENCODING HEIGHT
     ph = [Bool(f"ph_{h}") for h in range(h_min, h_max)]
 
