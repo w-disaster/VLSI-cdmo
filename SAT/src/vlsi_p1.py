@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from vlsi_sat_p import vlsi
+from vlsi_sat_p1 import vlsi
 from model.Circuit import Circuit
 from model.Plate import Plate
 from z3 import * 
