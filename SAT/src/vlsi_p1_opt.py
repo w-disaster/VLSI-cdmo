@@ -21,7 +21,7 @@ def get_io_files(argv):
             elif arg in ("-o", "--output_file"):
                 output_filename = v
             elif arg in ("-r", "--rotation"):
-                rot = v == "True"
+                rot = (v == "True")
 
         if input_filename == "" or output_filename == "" or rot == "":
             print("""Usage: specify input file [-i, --input_file], output file
@@ -60,7 +60,7 @@ def plot_plate(plate):
             (x, y) = circuit.get_coordinate()
             (cw, ch) = circuit.get_dim()
             M[h - y - ch : h - y, x : x + cw] = i + 1
-            ax.text(x, h - y - 1, i + 1, size=12, va='center', ha='center')
+            ax.text(x, h - y - 1, i + 1, size=11, va='center', ha='center')
 
         ax.matshow(M, );
 
@@ -70,7 +70,7 @@ def plot_plate(plate):
         ax.set_xticklabels(np.arange(0, w + 1, 1))
         ax.set_yticklabels(np.arange(h, -1, -1)) 
         
-        ax.grid(color='black', linestyle='-', linewidth=1)        
+        ax.grid(color="black", linestyle="dashed", linewidth=0.5)        
         plt.show()
 
 def solve_vlsi(plate, rot):
