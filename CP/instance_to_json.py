@@ -23,9 +23,9 @@ def get_io_files(argv):
         #print(str(err))
         sys.exit(2)
 
-def instance_to_json(filename):
+def instance_to_json(input_filename, output_filename):
     (csw, csh) = ([], [])
-    with open(filename) as f:
+    with open(input_filename) as f:
         lines = [f[:-1] for f in f.readlines()]
         w, n = int(lines[0]), int(lines[1])
         cdim = [d.split() for d in lines[2:]]
@@ -39,14 +39,15 @@ def instance_to_json(filename):
             "w" : w,
             "cw" : csw,
             "ch" : csh,
+            "rot" : False,
             }
     json_string = json.dumps(data)
-    with open('data.json'.format(filename), 'w') as outfile:
+    with open(output_filename, 'w') as outfile:
         outfile.write(json_string)
 
     return
 
 if __name__ == "__main__":
     (input_filename, output_filename) = get_io_files(sys.argv)
-    instance_to_json(input_filename)
+    instance_to_json(input_filename, output_filename)
 
