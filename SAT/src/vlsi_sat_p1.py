@@ -78,8 +78,7 @@ def vlsi_sat(plate):
             s.add(py[i][f])
 
         s.add([px[m][e] for e in range((w - csw[m]) // 2, w - csw[m])])
-        s.add([py[m][f] for f in range((h_max - csh[m]) // 2, h_max - csh[m])]) 
-    
+        s.add([py[m][f] for f in range((h_max - csh[m]) // 2, h_max - csh[m])])     
     
     s.add([Implies(csw[i] > floor((w - csw[j]) / 2), Not(lr[i][j])) 
         for (i, j) in combinations(range(n), 2)])
@@ -96,10 +95,12 @@ def vlsi_sat(plate):
 
     if s.check() == sat:
         m = s.model()
-        # x
-        x_ev = [[m.evaluate(px[i][e], model_completion=True) for e in range(len(px[i]))] for i in range(len(px))]
-        # y
-        y_ev = [[m.evaluate(py[i][f], model_completion=True) for f in range(len(py[i]))] for i in range(len(py))]
+        # evaluate x and y
+        x_ev = [[m.evaluate(px[i][e]) 
+            for e in range(len(px[i]))] for i in range(len(px))]
+        y_ev = [[m.evaluate(py[i][f]) 
+            for f in range(len(py[i]))] for i in range(len(py))]
+
         for k in range(n):
             xc, yc = x_ev[k].index(True), y_ev[k].index(True)
             print(xc, yc)
@@ -111,10 +112,10 @@ def vlsi_sat(plate):
 
 def vlsi(plate, rot):    
     
-    (n, (w,), cs) = (plate.get_n(), plate.get_dim(),
-            plate.get_circuits())
+    (n, (w,), cs) = (plate.get_n(), plate.get_dim(), plate.get_circuits())
 
     csw, csh = [], []
+
     for i in range(n):
         csw.append(cs[i].get_dim()[0])
         csh.append(cs[i].get_dim()[1])
@@ -139,11 +140,9 @@ def vlsi(plate, rot):
         if pl[0]:
             last_plate = copy(pl[1])
             print("SAT, h: {}".format(h))
-
             ub = h
         else:
             print("UNSAT, h: {}".format(h))
-
             lb = h
 
         new_h = floor((ub + lb) / 2)
