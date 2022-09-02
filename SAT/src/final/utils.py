@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-from vlsi_sat_p1_opt import vlsi_sat
 from model.Circuit import Circuit
 from model.Plate import Plate
 from z3 import * 
@@ -9,7 +8,7 @@ import matplotlib.pyplot as plt
 import time
 import sys, getopt
 
-def get_io_files(argv):
+def get_argv(argv):
     short_opts = "i:o:r:"
     long_opts = ["input_file=", "output_file=", "rotation="]
     try:
@@ -32,7 +31,7 @@ def get_io_files(argv):
         print(str(err))
         sys.exit(2)
 
-def read_input_file(filename):
+def instance_to_plate(filename):
     with open(filename) as f:
         lines = [f[:-1] for f in f.readlines()]
         w, n = int(lines[0]), int(lines[1])
@@ -41,7 +40,7 @@ def read_input_file(filename):
         circuits = [Circuit(dim) for dim in cs_dim]
     return Plate((w,), n, circuits)
 
-def write_output_file(filename, plate):
+def plate_to_solution(filename, plate):
     with open(filename, "w") as f:
         f.write(str(plate.get_dim()[0]) + " " + str(plate.get_dim()[0]) + "\n")
         f.write(str(plate.get_n()) + "\n")
@@ -50,45 +49,24 @@ def write_output_file(filename, plate):
             f.write(str(circuit.get_coordinate()[0]) + " " +
                 str(circuit.get_coordinate()[1]) + "\n")
 
-def plot_plate(plate):
-    if plate:
-        fig, ax = plt.subplots(figsize=(10, 10))
-        (w, h) = plate.get_dim()
-         
-        M = np.zeros((h, w))
-        for i, circuit in enumerate(plate.get_circuits()):
-            (x, y) = circuit.get_coordinate()
-            (cw, ch) = circuit.get_dim()
-            M[h - y - ch : h - y, x : x + cw] = i + 1
-            ax.text(x, h - y - 1, i + 1, size=11, va='center', ha='center')
-
-        ax.matshow(M, );
-
-        ax.set_xticks(np.arange(-.5, w, 1))
-        ax.set_yticks(np.arange(-.5, h, 1))
-
-        ax.set_xticklabels(np.arange(0, w + 1, 1))
-        ax.set_yticklabels(np.arange(h, -1, -1)) 
-        
-        ax.grid(color="black", linestyle="dashed", linewidth=0.5)        
-        plt.show()
-
+"""
 def solve_vlsi(plate, rot):
     start_time = time.time()
 
-    set_param('parallel.enable', True)
+    #set_param('parallel.enable', True)
     # letsss go Z3
-    plate = vlsi_sat(plate)
+    plate = vlsi_sat(plate, rot)
 
     print("Elapsed time: {}, plate dim (w, h) = ({}, {})"
             .format(time.time() - start_time, plate.get_dim()[0], 
                 plate.get_dim()[1]))
 
     return plate
+"""
 
-if __name__ == "__main__":
-    (input_filename, output_filename, rot) = get_io_files(sys.argv)
-    plate = read_input_file(input_filename)
-    plate = solve_vlsi(plate, rot)
-    write_output_file(output_filename, plate)
-    plot_plate(plate)
+#if __name__ == "__main__":
+    #(input_filename, output_filename, rot) = get_argv(sys.argv)
+    #plate = instance_to_plate(input_filename)
+    #plate = solve_vlsi(plate, rot)
+    #plate_to_solution(output_filename, plate)
+    #plot_plate(plate)
