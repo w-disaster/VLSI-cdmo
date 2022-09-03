@@ -2,7 +2,7 @@ from z3 import *
 from itertools import combinations
 from math import floor, ceil
 from model.Plate import Plate
-from Strategy import Strategy
+from model.Strategy import Strategy
 from copy import copy
 import numpy as np
 

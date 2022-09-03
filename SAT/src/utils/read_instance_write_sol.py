@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-from Circuit import Circuit
-from Plate import Plate
+from model.Circuit import Circuit
+from model.Plate import Plate
 from z3 import * 
 import numpy as np
 import seaborn as sns
