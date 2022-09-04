@@ -86,10 +86,11 @@ class VLSI_SAT(Strategy):
             for e in range(w - csw[i], w):
                 s.add(px[i][e])
 
-        s.add([px[m][e] for e in range((w - csw[m]) // 2, w - csw[m])])
-        s.add([py[m][f] for f in range((h_max - csh[m]) // 2, h_max - csh[m])])     
-        #s.add([px[m][e] for e in range(w)])
-        #s.add([py[m][f] for f in range(h_max)])
+        #s.add([px[m][e] for e in range((w - csw[m]) // 2, w - csw[m])])
+        #s.add([py[m][f] for f in range((h_max - csh[m]) // 2, h_max - csh[m])])     
+        s.add([px[m][e] for e in range(w)])
+        s.add([py[m][f] for f in range(h_max)])
+        
         s.add([Implies(csw[i] > floor((w - csw[j]) / 2), Not(lr[i][j])) 
             for (i, j) in combinations(range(n), 2)])
         s.add([Implies(csh[i] > floor((h_max - csh[j]) / 2), Not(ud[i][j])) 

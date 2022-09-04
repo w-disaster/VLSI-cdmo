@@ -16,9 +16,9 @@ class Circuit:
         self._dim = dim
 
     def set_coordinate(self, coordinate):
-        #if not self._is_placed():
-        self._coordinate = coordinate
-        self._set_placed(True)
+        if not self._is_placed():
+            self._coordinate = coordinate
+            self._set_placed(True)
 
     def _set_placed(self, placed):
         self._placed = placed
