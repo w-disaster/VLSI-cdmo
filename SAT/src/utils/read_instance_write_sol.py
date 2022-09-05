@@ -2,7 +2,6 @@
 from model.Circuit import Circuit
 from model.Plate import Plate
 import sys, getopt
-import re
 
 """
     Given the instance's filename as argument, this function creates n Circuit
