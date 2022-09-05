@@ -4,7 +4,6 @@ from minizinc import *#Instance, Model, Solver
 from model.VLSISolver import *
 from model.Plate import *
 from math import floor, ceil
-import numpy as np
 
 class VLSI_CP(VLSISolver):
     def __init__(self, plate: Plate, rot=False):
@@ -28,7 +27,10 @@ class VLSI_CP(VLSISolver):
                 self.csh, self.w, self.n)
 
         #CP
-        model = Model("model.mzn") if not self.rot else Model("model_rot.mzn")
+        if not self.rot:
+            model = Model("model.mzn") 
+        else:
+            model = Model("model_rot.mzn")
         solver = Solver.lookup("chuffed")
         
         instance = Instance(solver, model)
@@ -39,12 +41,32 @@ class VLSI_CP(VLSISolver):
         instance["ch"] = self.csh
         
         result = instance.solve()
-        
+       
+        result_str = str(result)
+
+
+        if self.rot:
+            csw, csh = [], []
+            i = 0
+            for v in [r for r in result_str.split()[1:] if r != "\n" and r != " "]:
+                if i == 0:
+                    csw.append(int(v)) 
+                else:
+                    if i == 1:
+                        csh.append(int(v))
+                i = i + 1
+                if i == 4:
+                    i = 0
+
+            self.csw = csw
+            self.csh = csh
+
         x = result["x"]
         y = result["y"]
         
         self.plate.set_dim((self.w, result['h']))
         for i in range(self.n):
+            self.plate.get_circuit(i).set_dim((self.csw[i], self.csh[i]))
             self.plate.get_circuit(i).set_coordinate((x[i], y[i]))
         
         return self.plate
