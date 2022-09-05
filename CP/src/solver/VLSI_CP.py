@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+from os import write
 from minizinc import *#Instance, Model, Solver
 from model.VLSISolver import *
 from model.Plate import *
@@ -39,9 +40,11 @@ class VLSI_CP(VLSISolver):
         
         result = instance.solve()
         
+        x = result["x"]
+        y = result["y"]
         
-        self.plate.set_dim((self.result["width"], result["height"]))
+        self.plate.set_dim((self.w, result['h']))
         for i in range(self.n):
-            self.plate.get_circuit(i).set_coordinate((result['x['+i+']'], result['y['+i+']']))
+            self.plate.get_circuit(i).set_coordinate((x[i], y[i]))
         
         return self.plate
