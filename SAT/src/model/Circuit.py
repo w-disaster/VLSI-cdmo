@@ -1,4 +1,9 @@
 #!/usr/bin/python3
+"""
+    In the VLSI problem, a Circuit is defined as a rectangle of dimension
+    (width, height), eventually with its left bottom corner placed in
+    a cell of coordinates (x, y) inside a plate.
+"""
 class Circuit:
     def __init__(self, dim):
         self._dim = dim

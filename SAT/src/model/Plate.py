@@ -1,4 +1,8 @@
 #!/usr/bin/python3
+"""
+    A Plate in the VLSI problem is defined as a block of dimension 
+    (width, height) which contains n circuits.
+"""
 class Plate:
     def __init__(self, dim, n, circuits):
         self._dim = dim
