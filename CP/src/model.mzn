@@ -49,4 +49,4 @@ solve :: seq_search([
          int_search([y[i] | i in sort], input_order, indomain_min, complete)]) minimize h;
 
 % OUTPUT
-output ["\(h)\n" ++ concat(["\(x[i]) \(y[i])\n" | i in CIRCUITS])];
+output ["\(h)\n" ++ concat(["\(cw[i]) \(ch[i]) \(x[i]) \(y[i])\n" | i in CIRCUITS])];
