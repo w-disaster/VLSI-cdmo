@@ -10,7 +10,7 @@ import sys, getopt
 def instance_to_plate(filename):
     # Open the file
     with open(filename) as f:
-        lines = [f[:-1] for f in f.readlines()]
+        lines = [f.replace("\n","") for f in f.readlines()]
         # Read the width of the plate and the number of circuits
         w, n = int(lines[0]), int(lines[1])
         # Split the space separated lines and read the circuits dimensions
