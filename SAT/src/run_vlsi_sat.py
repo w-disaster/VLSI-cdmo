@@ -39,14 +39,15 @@ def get_argv(argv):
     and computes the execution time.
     It returns the optimal plate computed by the solver
 """
+
 def solve(plate, rot):
     if rot:
-        solver = VLSI_SAT_rot()
+        solver = VLSI_SAT_rot(plate)
     else:
-        solver = VLSI_SAT()
+        solver = VLSI_SAT(plate)
 
     start_time = time()
-    plate = solver.solve_vlsi(plate)
+    plate = solver.solve_vlsi()
     print("Elapsed time: {}, plate dim (w, h) = ({}, {})"
             .format(time() - start_time, plate.get_dim()[0], 
                 plate.get_dim()[1]))
