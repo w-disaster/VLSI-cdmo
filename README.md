@@ -16,3 +16,11 @@ The purpose of this project is to model and solve the chosen problem using
 (i) Constraint Programming (CP), (ii) propositional SATisfiability (SAT)
 and/or its extension to Satisfiability Modulo Theories (SMT), and (iii)
 Mixed-Integer Linear Programming (MIP).
+
+Each subdirectory contains a ```src``` directory, a ```README``` file with the specifications on
+how to run the solver and a report, which describes the modeling and developing phases done
+by the project members.
+
+- The SAT subpart was implemented using the the [Z3](https://github.com/Z3Prover/z3) Python API, an high performance theorem prover
+- CP was written using [Minizinc](https://www.minizinc.org/), a constraint programming language
+- LP was developed using [PuLP](https://pypi.org/project/PuLP/), an LP modeler written in Python, which makes use of [CPLEX](https://www.ibm.com/products/ilog-cplex-optimization-studio) solver.
